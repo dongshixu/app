@@ -29,22 +29,21 @@ const candleStick = function(id, dataRaw){
         })
     });
     
-    const margin = {top: 20, right: 20, bottom: 20, left: 20};
-    const width = 600, height = 600;
+    const margin = {top: 20, right: 20, bottom: 20, left: 50};
+    const width = 954, height = 600;
 
-    // console.log(data)
-    // const dateRange = d3.timeDay.range(new Date(data[0].date), new Date(data[data.length - 1].date)).filter(d => d.getUTCDay() !== 0 && d.getUTCDay() !== 6)
-    // let dateRangeArry = []
-    // dateRange.map(d => dateRangeArry.push(`${parseDate(d)}`))
-    // console.log(dateRange)
+    const lastDay = new Date(data[data.length - 1].date)
+    const plusOneDay = new Date(`${lastDay.getFullYear()}-${lastDay.getMonth()+1}-${lastDay.getDate()+1}`)
 
     const scX = d3.scaleBand()
-                  .domain(dateRange)
+                  // .domain(dateRange)
+                  .domain(
+                    d3.utcDay
+                      .range(new Date(data[0].date), plusOneDay)
+                      .filter(d => d.getUTCDay() !== 0 && d.getUTCDay() !== 6)  // 获取从第一天到最后一天时间 interval 去除周末
+                  )
                   .range([margin.left, width - margin.right])
                   .padding(0.2);
-
-    // console.log(dateRangeArry[0], data[0].date)
-    // console.log(scX(data[0].date))
 
     const scY = d3.scaleLog()
                   .domain([d3.min(data, d=>d.low), d3.max(data, d=>d.high)])
@@ -53,18 +52,18 @@ const candleStick = function(id, dataRaw){
     const xAxis = g => {
       g.attr('transform', `translate(0, ${height - margin.bottom})`)
       .call(d3.axisBottom(scX)
-              // .tickValues(d3.utcMonday
-              //   .every(width>720? 1:2)
-              //   .range([data[0].date, data[data.length-1].date])
-              // )
-              .tickFormat(d3.timeFormat('%-m/%-d'))
+              .tickValues(d3.utcMonday
+                .every(width>720? 1:2)
+                .range(new Date(data[0].date), new Date(data[data.length-1].date)) // 横坐标只显示星期一日期
+              )
+              .tickFormat(d3.utcFormat("%-m/%-d"))
             )
       .call(g => g.select('.domain').remove())
     }
 
-    console.log(d3.timeMonday
-      // .every(width>720? 1:2)
-      .range([data[0].date, data[data.length-1].date]))
+    // console.log(d3.utcMonday.range(new Date(data[0].date), new Date(data[data.length-1].date)).map(d => parseDate(d)))
+    // const temp = d3.Format('%m-%d')
+    // console.log(temp("2017-11-20"))
 
     const yAxis = g => {
       g.attr('transform', `translate(${margin.left}, 0)`)
@@ -82,22 +81,25 @@ const candleStick = function(id, dataRaw){
 
     const formatChange = (y0, y1) => {
       const f = d3.format("+.2%");
-      return (y0, y1) => f((y1 - y0) / y0);
+      return f((y1 - y0) / y0);
     }
 
     const chart = async function(){
-      const svg = d3.create('svg').attr('viewbox', [0, 0, width, height]);
+      const svg = d3.create('svg')
+                    .attr('viewbox', `0,0,100,60`) // 
+                    .attr('width', width)
+                    .attr('height', height);
 
       svg.append('g').call(xAxis).attr('class', 'xAxis');
       svg.append('g').call(yAxis).attr('class', 'yAxis');
 
       const g = svg.append("g")
-                  .attr("stroke-linecap", "round")
+                  // .attr("stroke-linecap", "round")
                   .attr("stroke", "black")
                   .selectAll("g")
                   .data(data)
                   .join("g")
-                  .attr("transform", d => `translate(${scX(d.date)}, 0)`);
+                  .attr("transform", d => `translate(${scX(new Date(d.date))}, 0)`);
       g.append("line")
       .attr("y1", d => scY(d.low))
       .attr("y2", d => scY(d.high));
@@ -111,7 +113,8 @@ const candleStick = function(id, dataRaw){
               : d3.schemeSet1[8]);
 
       g.append("title")
-          .text(d => `${formatDate(d.date)}
+          .text(d =>
+             `${formatDate(new Date(d.date))}
                 Open: ${formatValue(d.open)}
                 Close: ${formatValue(d.close)} (${formatChange(d.open, d.close)})
                 Low: ${formatValue(d.low)}

@@ -16,7 +16,7 @@ import tec from './example/canadleStiick'
 import * as d3 from 'd3';
 
 //创建一个原始的svg（画布）
-const svg = d3.select('#svg-test').append('svg').attr('width', 1000).attr('height', 700).attr('id', 'gg').style('background', 'lightgrey');
+// const svg = d3.select('#svg-test').append('svg').attr('width', 1000).attr('height', 700).attr('id', 'gg').style('background', 'lightgrey');
 
 // // 获取数据
 // const dataRaw = d3.csv('./file/penguins.csv', d3.autoType)
